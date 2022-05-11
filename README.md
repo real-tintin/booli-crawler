@@ -1,0 +1,27 @@
+# Booli crawler
+
+A crawler of [bool.se](https://bool.se) - a Swedish housing platform.
+
+## Prerequisites
+* python >=3.8 (tested)
+
+## Installing
+The crawler is written in Python and can be installed as a package, using ``pip``.
+Assuming your standing in the project root:
+
+```bash
+pip install .
+```
+
+## Examples
+Some examples and usage of the crawler can be found in ``booli_crawler.examples``. The
+examples might use some additional dependencies which can be installed by:
+
+```bash
+pip install .[examples]
+```
+
+TODO: Show a cool figure.
+
+## Testing
+The unit tests are written in ``pytest``.
