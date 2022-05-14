@@ -7,6 +7,7 @@ from typing import Callable
 from typing import Optional
 
 import bs4.element
+import numpy as np
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -98,12 +99,9 @@ class Parser:
         Expected format: '1 670 000 kr'
         """
         try:
-            content = content_cb().replace(" ", "")
+            matches = re.findall(r'(\d+)', content_cb())
 
-            start_idx = 0
-            end_idx = content.find('kr')
-
-            return int(content[start_idx:end_idx])
+            return int(''.join(matches))
         except:
             return None
 
@@ -113,11 +111,7 @@ class Parser:
         Expected format: 'Lägenhet, Linköpings Innerstad'
         """
         try:
-            content = content_cb().replace(" ", "")
-
-            end_idx = content.find(',')
-
-            property_type_as_str = content[:end_idx]
+            property_type_as_str = re.findall(r'(.*), ', content_cb())[0]
 
             if property_type_as_str in PROPERTY_TYPE_MAP:
                 return PROPERTY_TYPE_MAP[property_type_as_str]
@@ -143,11 +137,7 @@ class Parser:
         Expected format: 'Lägenhet, Linköpings Innerstad'
         """
         try:
-            content = content_cb()
-
-            start_idx = content.find(',') + 2
-
-            return content[start_idx:]
+            return re.findall(r', (.*)', content_cb())[0]
         except:
             return None
 
@@ -157,12 +147,7 @@ class Parser:
         Expected format: '3 rum, 80½ m²' or '125 m²'
         """
         try:
-            content = content_cb().replace(" ", "")
-
-            start_idx = 0
-            end_idx = content.find('rum')
-
-            return int(content[start_idx:end_idx])
+            return int(re.findall(r'(\d+) rum', content_cb())[0])
         except:
             return None
 
@@ -172,13 +157,9 @@ class Parser:
         Expected format: '3 rum, 80½ m²' or '125 m²'
         """
         try:
-            content = content_cb().replace(" ", "")
-            content = content.replace("½", ".5")
+            content = content_cb().replace("½", ".5")
 
-            start_idx = content.find('rum,') + 4 if content.find('rum,') > -1 else 0
-            end_idx = content.find('m²')
-
-            return float(content[start_idx:end_idx])
+            return float(re.findall(r'(\d+\.?\d+) m²', content)[0])
         except:
             return None
 
@@ -206,9 +187,14 @@ PROPERTY_TYPE_MAP = {
 }
 
 
-def get_sold_listings(city: City, pages: int = 1, show_progress_bar=False) -> pd.DataFrame:
-    # TODO: Find max pages e.g., "Här var det tomt"!
+def get_sold_listings(city: City, max_pages: Optional[int] = None, show_progress_bar=False) -> pd.DataFrame:
     # TODO: Parallelize the requests in threads/processes push to thread safe data container.
+
+    if max_pages is None:
+        pages = _find_n_pages(city)
+    else:
+        pages = min(max_pages, _find_n_pages(city))
+
     parser = Parser()
     sold_listings = SoldListings()
     session = requests.Session()
@@ -217,9 +203,7 @@ def get_sold_listings(city: City, pages: int = 1, show_progress_bar=False) -> pd
               desc='Crawling booli',
               disable=(not show_progress_bar)) as progress_bar:
         for page in range(0, pages + 1):
-            response = session.get(url=SOLD_LISTINGS_URL.format(city_name=city.name.lower(),
-                                                                city_code=city.value,
-                                                                page=page))
+            response = session.get(url=_get_city_page_url(city=city, page=1))
 
             soup = BeautifulSoup(response.content, 'html.parser')
             listings = soup.find_all('a', {'href': re.compile(r'/bostad/')})
@@ -230,3 +214,27 @@ def get_sold_listings(city: City, pages: int = 1, show_progress_bar=False) -> pd
             progress_bar.update()
 
     return sold_listings.as_frame()
+
+
+def _find_n_pages(city: City) -> int:
+    """
+    Find n pages given a city by parsing the listing
+    index e.g., 'Visar <!-- -->35<!-- --> av <!-- -->27545'
+    """
+    response = requests.get(url=_get_city_page_url(city=city, page=1))
+
+    matches = re.search(r'Visar <!-- -->(\d+)<!-- --> av <!-- -->(\d+)', response.content.decode())
+
+    listings_per_page = int(matches.group(1))
+    n_listings = int(matches.group(2))
+
+    if listings_per_page > 0:
+        return int(np.ceil(n_listings / listings_per_page))
+    else:
+        return 0
+
+
+def _get_city_page_url(city: City, page: int) -> str:
+    return SOLD_LISTINGS_URL.format(city_name=city.name.lower(),
+                                    city_code=city.value,
+                                    page=page)

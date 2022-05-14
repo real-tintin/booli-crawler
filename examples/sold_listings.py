@@ -3,11 +3,11 @@ import plotly.graph_objects as go
 from booli_crawler.sold_listings import City, get_sold_listings, PropertyType
 
 CITY = City.Linkoping
-PAGES = 10
+MAX_PAGES = 10
 
 
 def main():
-    sold_listings = get_sold_listings(city=CITY, pages=PAGES, show_progress_bar=True)
+    sold_listings = get_sold_listings(city=CITY, max_pages=MAX_PAGES, show_progress_bar=True)
 
     fig = go.Figure()
 

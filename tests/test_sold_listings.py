@@ -5,9 +5,12 @@ from unittest import mock
 import pytest
 from requests import Session
 
-from booli_crawler.sold_listings import get_sold_listings, City, PropertyType, Parser
+from booli_crawler.sold_listings import get_sold_listings, City, PropertyType, Parser, _find_n_pages
 
 RESOURCE_BOOL_PAGE = './resources/booli_slutpriser_linkoping.html'
+
+LISTING_INDEX_FORMAT = '<span>Visar <!-- -->{listings_per_page}<!-- --> av <!-- -->{n_listings}</span>'
+DUMMY_CITY = City.Stockholm
 
 
 @dataclass
@@ -20,7 +23,7 @@ def test_get_sold_listings(mock_get):
     with open(RESOURCE_BOOL_PAGE, mode='rb') as f:
         mock_get.return_value = MockResponse(content=f.read())
 
-    listings = get_sold_listings(city=City.Linkoping)
+    listings = get_sold_listings(city=City.Linkoping, max_pages=1)
 
     assert listings.shape == (44, 8)
 
@@ -56,10 +59,11 @@ class TestParser:
     @staticmethod
     @pytest.mark.parametrize("content, exp", [
         ('3 rum, 80½ m²', 3),
+        ('44 rum, 9 m²', 44),
         ('125 m²', None),
         (None, None),
     ])
-    def test_parse_district(content, exp):
+    def test_parse_rooms(content, exp):
         assert Parser._parse_rooms(lambda: content) == exp
 
     @staticmethod
@@ -69,7 +73,7 @@ class TestParser:
         ('pi m²', None),
         (None, None),
     ])
-    def test_parse_district(content, exp):
+    def test_parse_area_m2(content, exp):
         assert Parser._parse_area_m2(lambda: content) == exp
 
     @staticmethod
@@ -78,7 +82,7 @@ class TestParser:
         ('not a valid date', None),
         (None, None),
     ])
-    def test_parse_district(content, exp):
+    def test_parse_date_sold(content, exp):
         assert Parser._parse_date_sold(lambda: content) == exp
 
     @staticmethod
@@ -89,3 +93,16 @@ class TestParser:
     ])
     def test_parse_street(content, exp):
         assert Parser._parse_street(lambda: content) == exp
+
+
+@pytest.mark.parametrize("listings_per_page, n_listings, exp_n_pages", [
+    (35, 27545, 787),
+    (17, 17, 1),
+    (0, 0, 0),
+])
+def test_find_n_pages(listings_per_page, n_listings, exp_n_pages):
+    content = LISTING_INDEX_FORMAT.format(listings_per_page=listings_per_page,
+                                          n_listings=n_listings)
+
+    with mock.patch('requests.get', return_value=MockResponse(content=content.encode())):
+        assert _find_n_pages(city=DUMMY_CITY) == exp_n_pages
