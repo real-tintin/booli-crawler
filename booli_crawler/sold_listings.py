@@ -203,7 +203,7 @@ def get_sold_listings(city: City, max_pages: Optional[int] = None, show_progress
               desc='Crawling booli',
               disable=(not show_progress_bar)) as progress_bar:
         for page in range(0, pages + 1):
-            response = session.get(url=_get_city_page_url(city=city, page=1))
+            response = session.get(url=_get_city_page_url(city=city, page=page))
 
             soup = BeautifulSoup(response.content, 'html.parser')
             listings = soup.find_all('a', {'href': re.compile(r'/bostad/')})
