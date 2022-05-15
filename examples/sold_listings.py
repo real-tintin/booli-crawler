@@ -16,15 +16,16 @@ def main():
 
     for property_type in PropertyType:
         use_indices = listings.property_type == property_type
+
         fig.add_traces(go.Scatter(x=listings.date_sold[use_indices],
-                                  y=listings.price_sek[use_indices],
+                                  y=listings.price_sek[use_indices] / listings.area_m2[use_indices],
                                   mode='markers',
                                   name=property_type.name))
 
     fig.update_layout(
-        title=f"Sold {PropertyType.Vila} in {CITY.name} (from booli.se)",
+        title=f"Sold listings in {CITY.name} (from booli.se)",
         xaxis_title="date sold [-]",
-        yaxis_title="price [sek]"
+        yaxis_title="price/area [sek/m²]"
     )
 
     fig.update_traces(customdata=listings.href,

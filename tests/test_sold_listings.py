@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from unittest import mock
 
 import pytest
-from requests import Session
+import requests
 
 from booli_crawler import sold_listings
 from booli_crawler.types import City
@@ -18,14 +18,14 @@ class MockResponse:
     content: bytes
 
 
-@mock.patch.object(Session, 'get')
+@mock.patch('requests.get')
 def test_get(mock_get):
     with open(RESOURCE_BOOL_PAGE, mode='rb') as f:
         mock_get.return_value = MockResponse(content=f.read())
 
     listings = sold_listings.get(city=City.Linkoping, max_pages=1, n_crawlers=1)
 
-    assert listings.shape == (22, 8)
+    assert listings.shape == (35, 8)
 
 
 @pytest.mark.parametrize("listings_per_page, n_listings, exp_n_pages", [

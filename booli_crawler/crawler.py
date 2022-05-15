@@ -35,7 +35,6 @@ class Crawler:
         self._page_parsed_cb = page_parsed_cb
 
         self._parser = Parser()
-        self._session = requests.Session()
 
         self._run = False
         self._thread = threading.Thread(target=self._exec)
@@ -56,10 +55,10 @@ class Crawler:
                 page = None
 
             if page is not None:
-                response = self._session.get(url=get_city_page_url(city=self._city, page=page))
+                response = requests.get(url=get_city_page_url(city=self._city, page=page))
 
                 soup = bs4.BeautifulSoup(response.content, 'html.parser')
-                listings = soup.find_all('a', {'href': re.compile(r'/bostad/')})
+                listings = soup.find_all('a', {'href': re.compile(r'/bostad/|/annons/')})
 
                 for listing in listings:
                     self._sold_listings.append(self._parser.parse_listing(listing))
