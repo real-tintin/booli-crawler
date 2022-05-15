@@ -1,217 +1,61 @@
 import re
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
-from threading import Lock
-from typing import Callable
+import time
 from typing import Optional
 
-import bs4.element
 import numpy as np
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-BASE_URL = "https://www.booli.se"
-SOLD_LISTINGS_URL = BASE_URL + "/slutpriser/{city_name}/{city_code}?page={page}"
+from booli_crawler.crawler import Crawler
+from booli_crawler.page_queue import PageQueue
+from booli_crawler.sold_listing_list import SoldListingList
+from booli_crawler.types import City
+from booli_crawler.url import get_city_page_url
 
 
-class City(Enum):
-    Stockholm = 1
-    Linkoping = 393
+def get(city: City,
+        max_pages: Optional[int] = None,
+        n_crawlers: int = 1,
+        show_progress_bar: bool = False) -> pd.DataFrame:
+    """
+    Crawls and returns the sold listings per page given
+    a city.
 
+    :param city: Selected city to crawl.
+    :param max_pages: Limit pages to crawl.
+    :param n_crawlers: Use to thread the crawling.
+    :param show_progress_bar: Set true for progress bar.
 
-class PropertyType(Enum):
-    Vila = 0
-    Apartment = 1
-    TownHouse = 2
-    SemiDetachedHouse = 3
-    HolidayHCottage = 4
-    Ranch = 5
-    Land = 6
-    Unknown = 7
-
-
-@dataclass
-class SoldListing:
-    price_sek: int
-
-    property_type: PropertyType
-
-    rooms: int
-    area_m2: float
-
-    street: str
-    district: str
-
-    date_sold: datetime
-
-    href: str
-
-
-class SoldListings:
-
-    def __init__(self):
-        self._lock = Lock()
-        self._members = SoldListing.__annotations__.keys()
-
-        for member in self._members:
-            setattr(self, member, [])
-
-    def append(self, sold_listing: SoldListing):
-        with self._lock:
-            for member in self._members:
-                new_value = getattr(sold_listing, member)
-                values = getattr(self, member)
-
-                values.append(new_value)
-
-    def as_frame(self) -> pd.DataFrame:
-        return pd.DataFrame({key: getattr(self, key) for key in self._members})
-
-
-class Parser:
-
-    def __init__(self):
-        pass
-
-    def parse_listing(self, listing: bs4.element.Tag) -> SoldListing:
-        return SoldListing(
-            price_sek=self._parse_price_sek(lambda: listing.contents[2].contents[0].contents[0]),
-
-            property_type=self._parse_property_type(lambda: listing.contents[1].contents[2].contents[0]),
-
-            rooms=self._parse_rooms(lambda: listing.contents[1].contents[1].contents[0]),
-            area_m2=self._parse_area_m2(lambda: listing.contents[1].contents[1].contents[0]),
-
-            street=self._parse_street(lambda: listing.contents[1].contents[0].contents[0]),
-            district=self._parse_district(lambda: listing.contents[1].contents[2].contents[0]),
-
-            date_sold=self._parse_date_sold(lambda: listing.contents[2].contents[2].contents[0]),
-
-            href=BASE_URL + listing.attrs['href']
-        )
-
-    @staticmethod
-    def _parse_price_sek(content_cb: Callable[[], str]) -> Optional[int]:
-        """
-        Expected format: '1 670 000 kr'
-        """
-        try:
-            matches = re.findall(r'(\d+)', content_cb())
-
-            return int(''.join(matches))
-        except:
-            return None
-
-    @staticmethod
-    def _parse_property_type(content_cb: Callable[[], str]) -> PropertyType:
-        """
-        Expected format: 'Lägenhet, Linköpings Innerstad'
-        """
-        try:
-            property_type_as_str = re.findall(r'(.*), ', content_cb())[0]
-
-            if property_type_as_str in PROPERTY_TYPE_MAP:
-                return PROPERTY_TYPE_MAP[property_type_as_str]
-            else:
-                return PropertyType.Unknown
-
-        except:
-            return PropertyType.Unknown
-
-    @staticmethod
-    def _parse_street(content_cb: Callable[[], str]) -> Optional[str]:
-        """
-        Expected format: '2022-04-23'
-        """
-        try:
-            return content_cb()
-        except:
-            return None
-
-    @staticmethod
-    def _parse_district(content_cb: Callable[[], str]) -> Optional[str]:
-        """
-        Expected format: 'Lägenhet, Linköpings Innerstad'
-        """
-        try:
-            return re.findall(r', (.*)', content_cb())[0]
-        except:
-            return None
-
-    @staticmethod
-    def _parse_rooms(content_cb: Callable[[], str]) -> Optional[int]:
-        """
-        Expected format: '3 rum, 80½ m²' or '125 m²'
-        """
-        try:
-            return int(re.findall(r'(\d+) rum', content_cb())[0])
-        except:
-            return None
-
-    @staticmethod
-    def _parse_area_m2(content_cb: Callable[[], str]) -> Optional[float]:
-        """
-        Expected format: '3 rum, 80½ m²' or '125 m²'
-        """
-        try:
-            content = content_cb().replace("½", ".5")
-
-            return float(re.findall(r'(\d+\.?\d+) m²', content)[0])
-        except:
-            return None
-
-    @staticmethod
-    def _parse_date_sold(content_cb: Callable[[], str]) -> Optional[datetime]:
-        """
-        Expected format: '2022-04-23'
-        """
-        try:
-            return datetime.strptime(content_cb(), '%Y-%m-%d')
-        except:
-            return None
-
-
-PROPERTY_TYPE_MAP = {
-    'Villa': PropertyType.Vila,
-    'Hus': PropertyType.Vila,
-    'Lägenhet': PropertyType.Apartment,
-    'Radhus': PropertyType.TownHouse,
-    'Kedjehus': PropertyType.TownHouse,
-    'Parhus': PropertyType.SemiDetachedHouse,
-    'Fritidshus': PropertyType.HolidayHCottage,
-    'Gård': PropertyType.Ranch,
-    'Tomt/Mark': PropertyType.Land,
-}
-
-
-def get_sold_listings(city: City, max_pages: Optional[int] = None, show_progress_bar=False) -> pd.DataFrame:
-    # TODO: Parallelize the requests in threads/processes push to thread safe data container.
-
+    :return: Sold listings given the city.
+    """
     if max_pages is None:
-        pages = _find_n_pages(city)
+        n_pages = _find_n_pages(city)
     else:
-        pages = min(max_pages, _find_n_pages(city))
+        n_pages = min(max_pages, _find_n_pages(city))
 
-    parser = Parser()
-    sold_listings = SoldListings()
-    session = requests.Session()
+    sold_listings = SoldListingList()
+    page_queue = PageQueue(pages=list(range(1, n_pages + 1)))
 
-    with tqdm(total=pages,
-              desc='Crawling booli',
-              disable=(not show_progress_bar)) as progress_bar:
-        for page in range(0, pages + 1):
-            response = session.get(url=_get_city_page_url(city=city, page=page))
+    if show_progress_bar:
+        progress_bar_cb = tqdm(total=n_pages, desc='Crawling booli').update
+    else:
+        progress_bar_cb = lambda: None
 
-            soup = BeautifulSoup(response.content, 'html.parser')
-            listings = soup.find_all('a', {'href': re.compile(r'/bostad/')})
+    crawlers = [Crawler(city=city,
+                        page_queue=page_queue,
+                        sold_listings=sold_listings,
+                        page_parsed_cb=progress_bar_cb)
+                for _ in range(n_crawlers)]
 
-            for listing in listings:
-                sold_listings.append(parser.parse_listing(listing))
+    for crawler in crawlers:
+        crawler.start()
 
-            progress_bar.update()
+    while page_queue.empty() is not True:
+        time.sleep(1)
+
+    for crawler in crawlers:
+        crawler.stop()
 
     return sold_listings.as_frame()
 
@@ -221,7 +65,7 @@ def _find_n_pages(city: City) -> int:
     Find n pages given a city by parsing the listing
     index e.g., 'Visar <!-- -->35<!-- --> av <!-- -->27545'
     """
-    response = requests.get(url=_get_city_page_url(city=city, page=1))
+    response = requests.get(url=get_city_page_url(city=city, page=1))
 
     matches = re.search(r'Visar <!-- -->(\d+)<!-- --> av <!-- -->(\d+)', response.content.decode())
 
@@ -232,9 +76,3 @@ def _find_n_pages(city: City) -> int:
         return int(np.ceil(n_listings / listings_per_page))
     else:
         return 0
-
-
-def _get_city_page_url(city: City, page: int) -> str:
-    return SOLD_LISTINGS_URL.format(city_name=city.name.lower(),
-                                    city_code=city.value,
-                                    page=page)

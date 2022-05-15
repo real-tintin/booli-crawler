@@ -1,20 +1,23 @@
 import plotly.graph_objects as go
 
-from booli_crawler.sold_listings import City, get_sold_listings, PropertyType
+from booli_crawler import sold_listings
+from booli_crawler.types import PropertyType, City
 
 CITY = City.Linkoping
-MAX_PAGES = 10
 
 
 def main():
-    sold_listings = get_sold_listings(city=CITY, max_pages=MAX_PAGES, show_progress_bar=True)
+    listings = sold_listings.get(city=CITY,
+                                 max_pages=1000,
+                                 n_crawlers=100,
+                                 show_progress_bar=True)
 
     fig = go.Figure()
 
     for property_type in PropertyType:
-        use_indices = sold_listings.property_type == property_type
-        fig.add_traces(go.Scatter(x=sold_listings.date_sold[use_indices],
-                                  y=sold_listings.price_sek[use_indices],
+        use_indices = listings.property_type == property_type
+        fig.add_traces(go.Scatter(x=listings.date_sold[use_indices],
+                                  y=listings.price_sek[use_indices],
                                   mode='markers',
                                   name=property_type.name))
 
@@ -24,7 +27,7 @@ def main():
         yaxis_title="price [sek]"
     )
 
-    fig.update_traces(customdata=sold_listings.href,
+    fig.update_traces(customdata=listings.href,
                       hovertemplate="date sold: %{x}<br>" +
                                     "price: %{y}<br>" +
                                     "href: %{customdata: .1f}")
