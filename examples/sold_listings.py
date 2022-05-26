@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import plotly.graph_objects as go
 
 from booli_crawler import sold_listings
@@ -8,7 +10,7 @@ CITY = City.Linkoping
 
 def main():
     listings = sold_listings.get(city=CITY,
-                                 max_pages=1000,
+                                 from_date_sold=datetime.strptime('2015', '%Y'),
                                  n_crawlers=100,
                                  show_progress_bar=True)
 
