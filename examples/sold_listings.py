@@ -11,9 +11,9 @@ CITY = City.Linkoping
 def main():
     listings = sold_listings.get(city=CITY,
                                  from_date_sold=datetime.strptime('2015', '%Y'),
-                                 n_crawlers=100,
-                                 show_progress_bar=True)
-
+                                 n_crawlers=10,
+                                 show_progress_bar=True,
+                                 verbose=False)
     fig = go.Figure()
 
     for property_type in PropertyType:

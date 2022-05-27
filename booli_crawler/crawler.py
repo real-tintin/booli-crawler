@@ -1,7 +1,9 @@
+import logging
 import queue
 import re
 import threading
 import time
+from http import HTTPStatus
 from typing import Callable
 
 import bs4
@@ -14,6 +16,10 @@ from booli_crawler.types import City
 from booli_crawler.url import PageUrl
 
 ONE_MS_IN_S = 0.001
+
+MAX_REQUEST_RETRIES = 10
+
+logger = logging.getLogger(__name__)
 
 
 class Crawler:
@@ -56,7 +62,7 @@ class Crawler:
                 page = None
 
             if page is not None:
-                response = requests.get(url=self._page_url(page=page))
+                response = self._request_get_with_retry(url=self._page_url(page=page))
 
                 soup = bs4.BeautifulSoup(response.content, 'html.parser')
                 listings = soup.find_all('a', {'href': re.compile(r'/bostad/|/annons/')})
@@ -67,3 +73,21 @@ class Crawler:
                 self._page_crawled_cb()
             else:
                 time.sleep(ONE_MS_IN_S)
+
+    @staticmethod
+    def _request_get_with_retry(url):
+        i_retry = 0
+        response = requests.get(url=url)
+
+        while response.status_code == HTTPStatus.TOO_MANY_REQUESTS and i_retry < MAX_REQUEST_RETRIES:
+            sleep_s = int(response.headers["Retry-After"])
+            logger.debug(f'To many requests. Sleeping {sleep_s} s.')
+            time.sleep(sleep_s)
+
+            response = requests.get(url=url)
+            i_retry += 1
+
+        if i_retry >= MAX_REQUEST_RETRIES:
+            raise RuntimeError('Max request retries exceeded.')
+
+        return response
