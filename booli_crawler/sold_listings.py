@@ -1,4 +1,3 @@
-import logging
 import time
 from datetime import datetime
 from typing import Optional
@@ -15,15 +14,12 @@ from booli_crawler.utils import get_num_of_pages
 
 SLEEP_CHECK_QUEUE_S = 1
 
-logging.basicConfig(level=logging.INFO)
-
 
 def get(city: City,
         from_date_sold: Optional[datetime] = None,
         to_date_sold: Optional[datetime] = None,
         n_crawlers: int = 1,
-        show_progress_bar: bool = False,
-        verbose: bool = False) -> pd.DataFrame:
+        show_progress_bar: bool = False) -> pd.DataFrame:
     """
     Crawls and returns the sold listings per page given
     a city.
@@ -37,9 +33,6 @@ def get(city: City,
 
     :return: Sold listings given the city.
     """
-    if verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-
     page_url_kwargs = {}
 
     if from_date_sold is not None:

@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 
 import plotly.graph_objects as go
 
 from booli_crawler import sold_listings
 from booli_crawler.types import PropertyType, City
+
+logging.basicConfig(level=logging.INFO)
 
 CITY = City.Linkoping
 
@@ -12,8 +15,7 @@ def main():
     listings = sold_listings.get(city=CITY,
                                  from_date_sold=datetime.strptime('2015', '%Y'),
                                  n_crawlers=10,
-                                 show_progress_bar=True,
-                                 verbose=False)
+                                 show_progress_bar=True)
     fig = go.Figure()
 
     for property_type in PropertyType:

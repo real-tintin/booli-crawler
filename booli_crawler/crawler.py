@@ -88,6 +88,6 @@ class Crawler:
             i_retry += 1
 
         if i_retry >= MAX_REQUEST_RETRIES:
-            raise RuntimeError('Max request retries exceeded.')
+            raise RuntimeError(f'Max request retries {MAX_REQUEST_RETRIES} exceeded.')
 
         return response
