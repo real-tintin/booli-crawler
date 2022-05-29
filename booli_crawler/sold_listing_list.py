@@ -23,4 +23,9 @@ class SoldListingList:
                 values.append(new_value)
 
     def as_frame(self) -> pd.DataFrame:
-        return pd.DataFrame({key: getattr(self, key) for key in self._members})
+        df = pd.DataFrame({key: getattr(self, key) for key in self._members})
+
+        df.index = [pd.Timestamp(ds) for ds in df.date_sold]
+        df = df.sort_index(ascending=False)
+
+        return df

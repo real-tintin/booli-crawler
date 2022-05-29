@@ -21,7 +21,12 @@ examples might use some additional dependencies which can be installed by:
 pip install .[examples]
 ```
 
-TODO: Show a cool figure.
+![](example.png)
 
 ## Testing
-The unit tests are written in ``pytest``.
+The unit tests are written in ``pytest``. To install dependencies and run tests:
+
+```bash
+pip install .[test]
+pytest .
+```
