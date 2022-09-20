@@ -9,6 +9,8 @@ RESOURCE_BOOL_PAGE = RESOURCES_ROOT / 'booli_slutpriser_linkoping.html'
 
 LISTING_INDEX_FORMAT = '<span>Visar <!-- -->{listings_per_page}<!-- --> av <!-- -->{n_listings}</span>'
 
+LISTINGS_EXP_SHAPE = (35, 8)
+
 
 @mock.patch('requests.get')
 def test_get(mock_get):
@@ -17,4 +19,5 @@ def test_get(mock_get):
 
     listings = sold_listings.get(city=City.Linkoping, n_crawlers=1)
 
-    assert listings.shape == (35, 8)
+    assert listings.isna().values.any() == False
+    assert listings.shape == LISTINGS_EXP_SHAPE

@@ -43,7 +43,7 @@ def get(city: City,
 
     page_url = get_page_url(city=city, **page_url_kwargs)
 
-    num_of_pages = get_num_of_pages(city, url=page_url(page=1))
+    num_of_pages = get_num_of_pages(city=city, url=page_url(page=1))
     pages = list(range(1, num_of_pages + 1))
 
     sold_listings = SoldListingList()
@@ -54,8 +54,7 @@ def get(city: City,
     else:
         progress_bar_cb = lambda: None
 
-    crawlers = [Crawler(city=city,
-                        page_url=page_url,
+    crawlers = [Crawler(page_url=page_url,
                         page_queue=page_queue,
                         sold_listings=sold_listings,
                         page_crawled_cb=progress_bar_cb)

@@ -12,7 +12,6 @@ import requests
 from booli_crawler.page_queue import PageQueue
 from booli_crawler.parser import Parser
 from booli_crawler.sold_listing_list import SoldListingList
-from booli_crawler.types import City
 from booli_crawler.url import PageUrl
 
 ONE_MS_IN_S = 0.001
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class Crawler:
 
-    def __init__(self, city: City,
+    def __init__(self,
                  page_url: PageUrl,
                  page_queue: PageQueue,
                  sold_listings: SoldListingList,

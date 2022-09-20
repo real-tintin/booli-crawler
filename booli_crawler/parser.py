@@ -26,18 +26,20 @@ class Parser:
         pass
 
     def parse_listing(self, listing: bs4.element.Tag) -> SoldListing:
+        contents_of_interest = listing.contents[1].contents[0]
+
         return SoldListing(
-            price_sek=self._parse_price_sek(lambda: listing.contents[2].contents[0].contents[0]),
+            price_sek=self._parse_price_sek(lambda: contents_of_interest.contents[2].contents[0]),
 
-            property_type=self._parse_property_type(lambda: listing.contents[1].contents[2].contents[0]),
+            property_type=self._parse_property_type(lambda: contents_of_interest.contents[1].contents[0]),
 
-            rooms=self._parse_rooms(lambda: listing.contents[1].contents[1].contents[0]),
-            area_m2=self._parse_area_m2(lambda: listing.contents[1].contents[1].contents[0]),
+            rooms=self._parse_rooms(lambda: contents_of_interest.contents[4].contents[0].contents[0]),
+            area_m2=self._parse_area_m2(lambda: contents_of_interest.contents[4].contents[1].contents[0]),
 
-            street=self._parse_street(lambda: listing.contents[1].contents[0].contents[0]),
-            district=self._parse_district(lambda: listing.contents[1].contents[2].contents[0]),
+            street=self._parse_street(lambda: contents_of_interest.contents[0].contents[0]),
+            district=self._parse_district(lambda: contents_of_interest.contents[1].contents[0]),
 
-            date_sold=self._parse_date_sold(lambda: listing.contents[2].contents[2].contents[0]),
+            date_sold=self._parse_date_sold(lambda: contents_of_interest.contents[3].contents[0]),
 
             href=BASE_URL + listing.attrs['href']
         )
@@ -49,7 +51,6 @@ class Parser:
         """
         try:
             matches = re.findall(r'(\d+)', content_cb())
-
             return int(''.join(matches))
         except:
             return None
@@ -96,7 +97,8 @@ class Parser:
         Expected format: '3 rum, 80½ m²' or '125 m²'
         """
         try:
-            return int(re.findall(r'(\d+) rum', content_cb())[0])
+            content = content_cb().replace("½", ".5")
+            return int(re.findall(r'(\d+) rum', content)[0])
         except:
             return None
 
@@ -107,7 +109,6 @@ class Parser:
         """
         try:
             content = content_cb().replace("½", ".5")
-
             return float(re.findall(r'(\d+\.?\d+) m²', content)[0])
         except:
             return None
