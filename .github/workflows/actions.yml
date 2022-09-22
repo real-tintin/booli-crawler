@@ -1,8 +1,9 @@
 
 name: ci
 on:
+  push:
   schedule:
-    - cron: '*/2 * * * *'
+    - cron: '47 3 * * *'
 
 jobs:
   build-test:
