@@ -3,12 +3,10 @@ import re
 import numpy as np
 import requests
 
-from booli_crawler.types import City
 
-
-def get_num_of_pages(city: City, url: str) -> int:
+def get_num_of_pages(url: str) -> int:
     """
-    Find number of pages given a city by parsing the listing
+    Find number of pages given the url by parsing the listing
     index e.g., 'Visar <!-- -->35<!-- --> av <!-- -->27545'
     """
     response = requests.get(url=url)

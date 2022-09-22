@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 import pandas as pd
 from tqdm import tqdm
@@ -18,6 +18,7 @@ SLEEP_CHECK_QUEUE_S = 1
 def get(city: City,
         from_date_sold: Optional[datetime] = None,
         to_date_sold: Optional[datetime] = None,
+        pages: Optional[List[int]] = None,
         n_crawlers: int = 1,
         show_progress_bar: bool = False) -> pd.DataFrame:
     """
@@ -27,9 +28,9 @@ def get(city: City,
     :param city: Selected city to crawl.
     :param from_date_sold: From date sold to crawl.
     :param to_date_sold: To date sold to crawl.
+    :param pages: Explicitly defines pages to parse, overrides _date_sold options.
     :param n_crawlers: Use to thread the crawling.
     :param show_progress_bar: Set true for progress bar.
-    :param verbose: Be more verbose i.e., enable debug logging.
 
     :return: Sold listings given the city.
     """
@@ -43,8 +44,9 @@ def get(city: City,
 
     page_url = get_page_url(city=city, **page_url_kwargs)
 
-    num_of_pages = get_num_of_pages(city=city, url=page_url(page=1))
-    pages = list(range(1, num_of_pages + 1))
+    if pages is None:
+        num_of_pages = get_num_of_pages(url=page_url(page=1))
+        pages = list(range(1, num_of_pages + 1))
 
     sold_listings = SoldListingList()
     page_queue = PageQueue(pages)

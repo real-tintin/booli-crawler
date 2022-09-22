@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 
-from booli_crawler.types import City
 from booli_crawler.utils import get_num_of_pages
 from .mock_response import MockResponse
 
@@ -19,4 +18,4 @@ def test_get_num_of_pages(listings_per_page, n_listings, exp_n_pages):
                                           n_listings=n_listings)
 
     with mock.patch('requests.get', return_value=MockResponse(content=content.encode())):
-        assert get_num_of_pages(city=City.Stockholm, url='not/used') == exp_n_pages
+        assert get_num_of_pages(url='not/used') == exp_n_pages
