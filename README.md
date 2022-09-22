@@ -30,3 +30,9 @@ The unit tests are written in ``pytest``. To install dependencies and run tests:
 pip install .[test]
 pytest .
 ```
+
+They can also be run in a Docker container using make:
+
+```bash
+make
+```
