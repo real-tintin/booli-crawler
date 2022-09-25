@@ -95,13 +95,6 @@ def get(city: City,
         return sold_listings.to_pd_frame()
 
 
-def _load_cached_sold_listings(path: Path) -> SoldListingList:
-    sold_listings = SoldListingList()
-    sold_listings.from_file(path=path)
-
-    return sold_listings
-
-
 def _get_urls_based_on_date_sold(city: City,
                                  from_date_sold: datetime,
                                  to_date_sold: datetime,
