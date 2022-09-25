@@ -1,5 +1,10 @@
+import re
 from datetime import datetime
-from typing import Optional, Protocol
+from queue import Queue
+from typing import List, Protocol
+
+import numpy as np
+import requests
 
 from booli_crawler.types import City
 
@@ -13,6 +18,17 @@ SOLD_LISTINGS_URL = BASE_URL + "/slutpriser/{city_name}/{city_code}?" \
 
 DATETIME_FORMAT = '%Y-%m-%d'
 
+Url = str
+
+
+class UrlQueue(Queue, object):
+
+    def __init__(self, urls: [Url]):
+        super(UrlQueue, self).__init__()
+
+        for url in urls:
+            self.put(url)
+
 
 class PageUrl(Protocol):
     def __call__(self, page: int) -> str:
@@ -20,8 +36,8 @@ class PageUrl(Protocol):
 
 
 def get_page_url(city: City,
-                 from_date_sold: Optional[datetime] = datetime.fromtimestamp(0),
-                 to_date_sold: Optional[datetime] = datetime.now()) -> PageUrl:
+                 from_date_sold: datetime,
+                 to_date_sold: datetime) -> PageUrl:
     """
     Creates and returns a callable (PageUrl) which in terms returns
     the url given a page number.
@@ -31,3 +47,22 @@ def get_page_url(city: City,
                                                  page=page,
                                                  from_date_sold=from_date_sold.strftime(DATETIME_FORMAT),
                                                  to_date_sold=to_date_sold.strftime(DATETIME_FORMAT))
+
+
+def get_num_of_pages(url: Url) -> int:
+    """
+    Find number of pages given the url by parsing the listing
+    index e.g., 'Visar <!-- -->35<!-- --> av <!-- -->27545'
+    """
+    response = requests.get(url=url)
+
+    matches = re.search(pattern=r'Visar <!-- -->(\d+)<!-- --> av <!-- -->(\d+)',
+                        string=response.content.decode())
+
+    listings_per_page = int(matches.group(1))
+    n_listings = int(matches.group(2))
+
+    if listings_per_page > 0:
+        return int(np.ceil(n_listings / listings_per_page))
+    else:
+        return 0

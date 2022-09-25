@@ -9,10 +9,9 @@ from typing import Callable
 import bs4
 import requests
 
-from booli_crawler.page_queue import PageQueue
 from booli_crawler.parser import Parser
 from booli_crawler.sold_listing_list import SoldListingList
-from booli_crawler.url import PageUrl
+from booli_crawler.url import UrlQueue
 
 ONE_MS_IN_S = 0.001
 
@@ -24,20 +23,18 @@ logger = logging.getLogger(__name__)
 class Crawler:
 
     def __init__(self,
-                 page_url: PageUrl,
-                 page_queue: PageQueue,
+                 url_queue: UrlQueue,
                  sold_listings: SoldListingList,
                  page_crawled_cb: Callable):
         """
-        Crawls through sold listings at pages given by the
+        Crawls through sold listings given by urls in the
         queue. Appends listings to sold_listings.
 
         Calls page_crawled_cb every time a new pages has
         been parsed.
         """
-        self._page_queue = page_queue
+        self._url_queue = url_queue
         self._sold_listings = sold_listings
-        self._page_url = page_url
         self._page_crawled_cb = page_crawled_cb
 
         self._parser = Parser()
@@ -56,12 +53,12 @@ class Crawler:
     def _exec(self):
         while self._run:
             try:
-                page = self._page_queue.get(block=False)
+                url = self._url_queue.get(block=False)
             except queue.Empty:
-                page = None
+                url = None
 
-            if page is not None:
-                response = self._request_with_retry(url=self._page_url(page=page))
+            if url is not None:
+                response = self._request_with_retry(url=url)
 
                 soup = bs4.BeautifulSoup(response.content, 'html.parser')
                 listings = soup.find_all('a', {'href': re.compile(r'/bostad/|/annons/')})
