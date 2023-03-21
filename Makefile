@@ -5,5 +5,5 @@
 .PHONY: install_pkg_and_test
 
 install_pkg_and_test:
-	docker build . -t booli_crawler
+	docker build -t booli_crawler .
 	docker run booli_crawler python -m pytest

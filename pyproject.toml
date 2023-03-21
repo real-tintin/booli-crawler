@@ -1,3 +1,25 @@
+[project]
+name = "booli-crawler"
+description = "A crawler of bool.se - a Swedish housing platform."
+dynamic = ["version"]
+requires-python = ">=3.8"
+dependencies = [
+    "requests",
+    "pandas",
+    "bs4",
+    "tqdm"
+]
+
 [build-system]
-requires = ["setuptools >= 62.1.0", "wheel"]
+requires = ["setuptools>=62.1.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+test = [
+    "pytest"
+]
+examples = [
+    "plotly"
+]
+
+[tool.setuptools_scm]
