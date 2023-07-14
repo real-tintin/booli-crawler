@@ -33,4 +33,4 @@ class SoldListing:
 
     date_sold: datetime
 
-    href: str
+    url: str

@@ -6,20 +6,20 @@ import pytest
 
 from booli_crawler.sold_listings import PagesNotUnique, PagesExceedsMax
 from booli_crawler.sold_listings import get as sold_listings_get
-from booli_crawler.types import City
+from booli_crawler.types import City, SoldListing
 from .common import RESOURCES_ROOT
 from .mock_response import MockResponse
 
 RESOURCE_BOOLI_PAGE = RESOURCES_ROOT / 'booli_slutpriser_linkoping.html'
 RESOURCE_BOOLI_CITY = City.Linkoping
-RESOURCE_BOOLI_MIN_DATE_SOLD = datetime.strptime("2022-06-10", '%Y-%m-%d')
-RESOURCE_BOOLI_MAX_DATE_SOLD = datetime.strptime("2022-09-12", '%Y-%m-%d')
+RESOURCE_BOOLI_MIN_DATE_SOLD = datetime.strptime("2023-06-20", '%Y-%m-%d')
+RESOURCE_BOOLI_MAX_DATE_SOLD = datetime.strptime("2023-06-27", '%Y-%m-%d')
 
 TEST_CACHE_NAME = "test_cache"
 
 LISTINGS_EXP_SHAPE = (35, 8)
 
-LocalResponse = collections.namedtuple('LocalResponse', 'sold_listings_get mocked_requests_get')
+LocalResponse = collections.namedtuple('LocalResponse', ['sold_listings_get', 'mocked_requests_get'])
 
 
 @pytest.fixture
@@ -35,18 +35,23 @@ def tmp_cache_path(tmp_path):
     yield tmp_path / TEST_CACHE_NAME
 
 
+def assert_listings_integrity(listings):
+    for member in SoldListing.__annotations__:
+        assert not getattr(listings, member).isna().values.all()
+
+    assert listings.shape == LISTINGS_EXP_SHAPE
+
+
 def test_get_with_local_response(local_response):
     listings = local_response.sold_listings_get(city=RESOURCE_BOOLI_CITY, use_cache=False)
 
-    assert listings.isna().values.any() == False
-    assert listings.shape == LISTINGS_EXP_SHAPE
+    assert_listings_integrity(listings)
 
 
 def test_get_with_remote_response():
     listings = sold_listings_get(city=City.Linkoping, pages=[1], use_cache=False)
 
-    assert listings.isna().values.all() == False  # Somewhat relaxed since some filed can be NaN e.g., missing area.
-    assert listings.shape == LISTINGS_EXP_SHAPE
+    assert_listings_integrity(listings)
 
 
 def test_get_with_cache_assert_calls_to_requests(local_response, tmp_cache_path):

@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from queue import Queue
-from typing import List, Protocol
+from typing import Protocol
 
 import numpy as np
 import requests
@@ -52,11 +52,11 @@ def get_page_url(city: City,
 def get_num_of_pages(url: Url) -> int:
     """
     Find number of pages given the url by parsing the listing
-    index e.g., 'Visar <!-- -->35<!-- --> av <!-- -->27545'
+    index e.g., 'Visar sida <!-- -->35<!-- --> av <!-- -->27545'
     """
     response = requests.get(url=url)
 
-    matches = re.search(pattern=r'Visar <!-- -->(\d+)<!-- --> av <!-- -->(\d+)',
+    matches = re.search(pattern=r'Visar sida <!-- -->(\d+)<!-- --> av <!-- -->(\d+)',
                         string=response.content.decode())
 
     listings_per_page = int(matches.group(1))

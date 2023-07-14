@@ -8,6 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from booli_crawler.crawler import Crawler
+from booli_crawler.parser import Parser
 from booli_crawler.sold_listing_list import SoldListingList
 from booli_crawler.types import City
 from booli_crawler.url import get_page_url, UrlQueue, Url, get_num_of_pages
@@ -57,6 +58,7 @@ def get(city: City,
 
     :return: Sold listings given the city.
     """
+    parser = Parser()
     sold_listings = SoldListingList()
 
     if use_cache:
@@ -79,7 +81,8 @@ def get(city: City,
     else:
         progress_bar_cb = lambda: None
 
-    _crawl_pages(sold_listings=sold_listings,
+    _crawl_pages(parser=parser,
+                 sold_listings=sold_listings,
                  url_queue=url_queue,
                  n_crawlers=n_crawlers,
                  page_crawled_cb=progress_bar_cb)
@@ -132,11 +135,13 @@ def _to_pd_frame_and_filter_on_date_sold(sold_listings: SoldListingList,
     return pd_frame[use_indices]
 
 
-def _crawl_pages(sold_listings: SoldListingList,
+def _crawl_pages(parser: Parser,
+                 sold_listings: SoldListingList,
                  url_queue: UrlQueue,
                  n_crawlers: int,
                  page_crawled_cb: Callable) -> SoldListingList:
-    crawlers = [Crawler(url_queue=url_queue,
+    crawlers = [Crawler(parser=parser,
+                        url_queue=url_queue,
                         sold_listings=sold_listings,
                         page_crawled_cb=page_crawled_cb)
                 for _ in range(n_crawlers)]

@@ -5,7 +5,7 @@ import pytest
 from booli_crawler.url import get_num_of_pages
 from .mock_response import MockResponse
 
-LISTING_INDEX_FORMAT = '<span>Visar <!-- -->{listings_per_page}<!-- --> av <!-- -->{n_listings}</span>'
+LISTING_INDEX_FORMAT = '<span>Visar sida <!-- -->{listings_per_page}<!-- --> av <!-- -->{n_listings}</span>'
 
 
 @pytest.mark.parametrize("listings_per_page, n_listings, exp_n_pages", [

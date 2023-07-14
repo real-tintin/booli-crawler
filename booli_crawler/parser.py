@@ -1,8 +1,6 @@
 import re
 from datetime import datetime
-from typing import Optional, Callable
-
-import bs4
+from typing import Optional, Dict
 
 from booli_crawler.types import PropertyType, SoldListing
 from booli_crawler.url import BASE_URL
@@ -25,100 +23,55 @@ class Parser:
     def __init__(self):
         pass
 
-    def parse_listing(self, listing: bs4.element.Tag) -> SoldListing:
-        contents_of_interest = listing.contents[1].contents[0]
-
+    def parse_listing(self, listing: Dict) -> SoldListing:
         return SoldListing(
-            price_sek=self._parse_price_sek(lambda: contents_of_interest.contents[2].contents[0]),
+            price_sek=listing['soldPrice']['raw'],
 
-            property_type=self._parse_property_type(lambda: contents_of_interest.contents[1].contents[0]),
+            property_type=self._parse_property_type(listing['objectType']),
 
-            rooms=self._parse_rooms(lambda: contents_of_interest.contents[4].contents[0].contents[0]),
-            area_m2=self._parse_area_m2(lambda: contents_of_interest.contents[4].contents[1].contents[0]),
+            rooms=self._parse_rooms(listing['rooms']),
+            area_m2=self._parse_area_m2(listing['livingArea']),
 
-            street=self._parse_street(lambda: contents_of_interest.contents[0].contents[0]),
-            district=self._parse_district(lambda: contents_of_interest.contents[1].contents[0]),
+            street=listing['streetAddress'],
+            district=listing['descriptiveAreaName'],
 
-            date_sold=self._parse_date_sold(lambda: contents_of_interest.contents[3].contents[0]),
+            date_sold=datetime.strptime(listing['soldDate'], '%Y-%m-%d'),
 
-            href=BASE_URL + listing.attrs['href']
+            url=BASE_URL + listing['url']
         )
 
     @staticmethod
-    def _parse_price_sek(content_cb: Callable[[], str]) -> Optional[int]:
-        """
-        Expected format: '1 670 000 kr'
-        """
+    def _parse_property_type(property_type: str) -> PropertyType:
         try:
-            matches = re.findall(r'(\d+)', content_cb())
-            return int(''.join(matches))
-        except:
-            return None
-
-    @staticmethod
-    def _parse_property_type(content_cb: Callable[[], str]) -> PropertyType:
-        """
-        Expected format: 'Lägenhet, Linköpings Innerstad'
-        """
-        try:
-            property_type_as_str = re.findall(r'(.*), ', content_cb())[0]
-
-            if property_type_as_str in PROPERTY_TYPE_MAP:
-                return PROPERTY_TYPE_MAP[property_type_as_str]
+            if property_type in PROPERTY_TYPE_MAP:
+                return PROPERTY_TYPE_MAP[property_type]
             else:
                 return PropertyType.Unknown
-
         except:
             return PropertyType.Unknown
 
     @staticmethod
-    def _parse_street(content_cb: Callable[[], str]) -> Optional[str]:
+    def _parse_rooms(rooms: Dict) -> Optional[int]:
         """
-        Expected format: 'Ågatan 1'
+        Expected format: '3 rum'
         """
         try:
-            return content_cb()
+            rooms_as_str = rooms['formatted'].replace("½", ".5")
+            rooms_as_int = int(re.findall(r'(\d+) rum', rooms_as_str)[0])
+
+            return rooms_as_int
         except:
             return None
 
     @staticmethod
-    def _parse_district(content_cb: Callable[[], str]) -> Optional[str]:
+    def _parse_area_m2(area: Dict) -> Optional[float]:
         """
-        Expected format: 'Lägenhet, Linköpings Innerstad'
+        Expected format: '80½ m²' or '125 m²'
         """
         try:
-            return re.findall(r', (.*)', content_cb())[0]
-        except:
-            return None
+            area_as_str = area['formatted'].replace("½", ".5")
+            area_as_float = float(re.findall(r'(\d+\.?\d+) m²', area_as_str)[0])
 
-    @staticmethod
-    def _parse_rooms(content_cb: Callable[[], str]) -> Optional[int]:
-        """
-        Expected format: '3 rum, 80½ m²' or '125 m²'
-        """
-        try:
-            content = content_cb().replace("½", ".5")
-            return int(re.findall(r'(\d+) rum', content)[0])
-        except:
-            return None
-
-    @staticmethod
-    def _parse_area_m2(content_cb: Callable[[], str]) -> Optional[float]:
-        """
-        Expected format: '3 rum, 80½ m²' or '125 m²'
-        """
-        try:
-            content = content_cb().replace("½", ".5")
-            return float(re.findall(r'(\d+\.?\d+) m²', content)[0])
-        except:
-            return None
-
-    @staticmethod
-    def _parse_date_sold(content_cb: Callable[[], str]) -> Optional[datetime]:
-        """
-        Expected format: '2022-04-23'
-        """
-        try:
-            return datetime.strptime(content_cb(), '%Y-%m-%d')
+            return area_as_float
         except:
             return None
