@@ -1,6 +1,6 @@
 # Booli crawler
 
-A crawler of [bool.se](https://bool.se) - a Swedish housing platform.
+A crawler of [booli.se](https://booli.se) - a Swedish housing platform.
 
 ## Prerequisites
 * python >=3.8 (tested)
