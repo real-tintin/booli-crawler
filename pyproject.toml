@@ -1,6 +1,6 @@
 [project]
 name = "booli-crawler"
-description = "A crawler of bool.se - a Swedish housing platform."
+description = "A crawler of booli.se - a Swedish housing platform."
 dynamic = ["version"]
 requires-python = ">=3.8"
 dependencies = [
