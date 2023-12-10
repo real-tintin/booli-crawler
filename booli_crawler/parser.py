@@ -53,11 +53,12 @@ class Parser:
     @staticmethod
     def _parse_rooms(rooms: Dict) -> Optional[int]:
         """
-        Expected format: '3 rum'
+        Expected format: '3 rum' or other
+        delimiter e.g., '1\xa0rum'
         """
         try:
             rooms_as_str = rooms['formatted'].replace("½", ".5")
-            rooms_as_int = int(re.findall(r'(\d+) rum', rooms_as_str)[0])
+            rooms_as_int = int(re.findall(r'(\d+).rum', rooms_as_str)[0])
 
             return rooms_as_int
         except:
@@ -66,11 +67,12 @@ class Parser:
     @staticmethod
     def _parse_area_m2(area: Dict) -> Optional[float]:
         """
-        Expected format: '80½ m²' or '125 m²'
+        Expected format: '80½ m²' or '125 m²' or other
+        delimiter e.g., '48\xa0m²'
         """
         try:
             area_as_str = area['formatted'].replace("½", ".5")
-            area_as_float = float(re.findall(r'(\d+\.?\d+) m²', area_as_str)[0])
+            area_as_float = float(re.findall(r'(\d+\.?\d+).m²', area_as_str)[0])
 
             return area_as_float
         except:
