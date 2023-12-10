@@ -1,14 +1,27 @@
 [project]
-name = "booli-crawler"
+name = "booli_crawler"
+authors = [
+  { name="Oscar Goldring", email="hello@goldring.dev" },
+]
 description = "A crawler of booli.se - a Swedish housing platform."
+readme = "README.md"
 dynamic = ["version"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "requests",
     "pandas",
     "bs4",
     "tqdm"
 ]
+
+[project.urls]
+Homepage = "https://github.com/real-tintin/booli-crawler"
+Issues = "https://github.com/real-tintin/booli-crawler/issues"
 
 [build-system]
 requires = ["setuptools>=62.1.0", "setuptools_scm[toml]>=6.2"]
