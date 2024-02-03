@@ -11,13 +11,14 @@ from booli_crawler.crawler import Crawler
 from booli_crawler.parser import Parser
 from booli_crawler.sold_listing_list import SoldListingList
 from booli_crawler.types import City
-from booli_crawler.url import get_page_url, UrlQueue, Url, get_num_of_pages
+from booli_crawler.url import get_page_url, UrlQueue, Url, get_num_of_pages, UrlParseError
 
 SLEEP_CHECK_QUEUE_S = 1
 
 DEFAULT_CACHE_PATH = Path.home() / ".booli_crawler_cache"
 
 DATETIME_ONE_DAY = timedelta(days=1)
+DATETIME_ONE_WEEK = timedelta(weeks=1)
 
 Pages = List[int]
 Urls = List[Url]
@@ -166,7 +167,13 @@ def _get_urls(city: City,
                             from_date_sold=from_date_sold,
                             to_date_sold=to_date_sold)
 
-    n_pages = get_num_of_pages(url=page_url(page=1))
+    try:
+        n_pages = get_num_of_pages(url=page_url(page=1))
+    except UrlParseError as e:
+        if to_date_sold - from_date_sold > DATETIME_ONE_WEEK:
+            raise e
+
+        n_pages = 1
 
     if pages is None:
         pages = range(1, n_pages + 1)

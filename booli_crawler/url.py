@@ -21,6 +21,11 @@ DATETIME_FORMAT = '%Y-%m-%d'
 Url = str
 
 
+class UrlParseError(Exception):
+    """Raised when a URL could not be parsed"""
+    pass
+
+
 class UrlQueue(Queue, object):
 
     def __init__(self, urls: [Url]):
@@ -58,6 +63,9 @@ def get_num_of_pages(url: Url) -> int:
 
     matches = re.search(pattern=r'Visar sida <!-- -->(\d+)<!-- --> av <!-- -->(\d+)',
                         string=response.content.decode())
+
+    if matches is None:
+        raise UrlParseError(f"Could not parse number of pages from url: {url}")
 
     listings_per_page = int(matches.group(1))
     n_listings = int(matches.group(2))
