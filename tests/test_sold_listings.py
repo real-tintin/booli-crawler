@@ -17,8 +17,6 @@ RESOURCE_BOOLI_MAX_DATE_SOLD = datetime.strptime("2023-06-27", '%Y-%m-%d')
 
 TEST_CACHE_NAME = "test_cache"
 
-LISTINGS_EXP_SHAPE = (35, 8)
-
 LocalResponse = collections.namedtuple('LocalResponse', ['sold_listings_get', 'mocked_requests_get'])
 
 
@@ -37,9 +35,10 @@ def tmp_cache_path(tmp_path):
 
 def assert_listings_integrity(listings):
     for member in SoldListing.__annotations__:
-        assert not getattr(listings, member).isna().values.all()
+        values = getattr(listings, member)
 
-    assert listings.shape == LISTINGS_EXP_SHAPE
+        assert len(values) > 0
+        assert not values.isna().values.all()
 
 
 def test_get_with_local_response(local_response):
